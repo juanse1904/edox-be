@@ -5,6 +5,7 @@ import { Role } from '@prisma/client';
 
 const mockAuthService = {
   register: jest.fn(),
+  login: jest.fn(),
 };
 
 describe('AuthController', () => {
@@ -54,6 +55,27 @@ describe('AuthController', () => {
       const result = await controller.register(dto);
 
       expect(result).toEqual(createdUser);
+    });
+  });
+
+  describe('login', () => {
+    const dto = { email: 'juan@test.com', password: 'Password12' };
+    const tokenResponse = { accessToken: 'signed_token' };
+
+    it('should call authService.login with the dto', async () => {
+      mockAuthService.login.mockResolvedValue(tokenResponse);
+
+      await controller.login(dto);
+
+      expect(mockAuthService.login).toHaveBeenCalledWith(dto);
+    });
+
+    it('should return the accessToken from authService', async () => {
+      mockAuthService.login.mockResolvedValue(tokenResponse);
+
+      const result = await controller.login(dto);
+
+      expect(result).toEqual(tokenResponse);
     });
   });
 });

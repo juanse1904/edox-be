@@ -1,4 +1,5 @@
-import { ConflictException } from '@nestjs/common';
+import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
@@ -21,6 +22,11 @@ const mockUser = {
 
 const mockUsersService = {
   create: jest.fn(),
+  findByEmail: jest.fn(),
+};
+
+const mockJwtService = {
+  sign: jest.fn().mockReturnValue('signed_token'),
 };
 
 describe('AuthService', () => {
@@ -31,6 +37,7 @@ describe('AuthService', () => {
       providers: [
         AuthService,
         { provide: UsersService, useValue: mockUsersService },
+        { provide: JwtService, useValue: mockJwtService },
       ],
     }).compile();
 
@@ -84,6 +91,42 @@ describe('AuthService', () => {
       await expect(service.register(dto)).rejects.toThrow(
         new ConflictException('Email already in use'),
       );
+    });
+  });
+
+  describe('login', () => {
+    const dto = { email: mockUser.email, password: 'Password12' };
+
+    it('should throw UnauthorizedException when user is not found', async () => {
+      mockUsersService.findByEmail.mockResolvedValue(null);
+
+      await expect(service.login(dto)).rejects.toThrow(
+        new UnauthorizedException('Invalid credentials'),
+      );
+    });
+
+    it('should throw UnauthorizedException when password does not match', async () => {
+      mockUsersService.findByEmail.mockResolvedValue(mockUser);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+
+      await expect(service.login(dto)).rejects.toThrow(
+        new UnauthorizedException('Invalid credentials'),
+      );
+    });
+
+    it('should return an accessToken when credentials are valid', async () => {
+      mockUsersService.findByEmail.mockResolvedValue(mockUser);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      mockJwtService.sign.mockReturnValue('signed_token');
+
+      const result = await service.login(dto);
+
+      expect(mockJwtService.sign).toHaveBeenCalledWith({
+        sub: mockUser.id,
+        email: mockUser.email,
+        role: mockUser.role,
+      });
+      expect(result).toEqual({ accessToken: 'signed_token' });
     });
   });
 });
