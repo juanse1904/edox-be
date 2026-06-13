@@ -13,4 +13,8 @@ export const validationSchema = Joi.object({
   JWT_EXPIRATION: Joi.string().default('3600s'),
 
   CORS_ORIGIN: Joi.string().default('*'),
+
+  MAIL_HOST: Joi.string().default('127.0.0.1'),
+  MAIL_PORT: Joi.number().default(1025),
+  MAIL_FROM: Joi.string().default('noreply@edox.com'),
 });

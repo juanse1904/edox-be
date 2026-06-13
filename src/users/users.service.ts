@@ -15,4 +15,18 @@ export class UsersService {
   async findByEmail(email: string) {
     return this.prisma.user.findUnique({ where: { email } });
   }
+
+  async saveVerificationCode(email: string, code: string, expiresAt: Date) {
+    return this.prisma.user.update({
+      where: { email },
+      data: { verificationCode: code, verificationCodeExpiresAt: expiresAt },
+    });
+  }
+
+  async markAsVerified(email: string) {
+    return this.prisma.user.update({
+      where: { email },
+      data: { isVerified: true, verificationCode: null, verificationCodeExpiresAt: null },
+    });
+  }
 }
